@@ -1,0 +1,12 @@
+# YOLOv10 Configuration File
+
+# Number of classes
+nc: 1
+
+# Names of classes
+names:
+  0: "Human face"
+
+# Paths to training and validation datasets
+train: C:\Users\Khadija\Documents\YOLOAnnotations\train.txt
+val: C:\Users\Khadija\Documents\YOLOAnnotations\test.txt

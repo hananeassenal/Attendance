@@ -1,0 +1,12 @@
+YOLOv10: Real-Time End-to-End Object Detection https://docs.ultralytics.com/models/yolov10/
+
+A Deep Dive Into Non-Maximum Suppression (NMS)
+Chinmay Bhalerao
+Written by Chinmay Bhalerao
+Published on Nov. 02, 2023
+
+What is YOLOv10? An Architecture Deep Dive. Petru Potrimba JUN 14, 2024
+
+https://storage.googleapis.com/openimages/web/factsfigures_v7.html Overview of Open Images V7
+
+               
