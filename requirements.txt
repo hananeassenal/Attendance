@@ -8,3 +8,4 @@ dlib-bin
 face_recognition @ git+https://github.com/thetoby9944/face_recognition
 streamlit
 streamlit-option-menu
+opencv-python-headless
