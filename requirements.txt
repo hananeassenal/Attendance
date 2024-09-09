@@ -4,4 +4,3 @@ streamlit
 streamlit-option-menu
 opencv-python-headless
 Pillow
-face_recognition_models
