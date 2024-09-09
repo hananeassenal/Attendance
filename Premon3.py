@@ -1,41 +1,28 @@
 import streamlit as st
-import subprocess
-import sys
-import importlib
-
-def install_and_import(package):
-    try:
-        importlib.import_module(package)
-    except ImportError:
-        st.write(f"Installing {package}...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    finally:
-        globals()[package] = importlib.import_module(package)
-
-# Install and import required packages
-install_and_import('dlib')
-install_and_import('face_recognition')
-
-# Now you can import other required modules
-import uuid
-import os
 import cv2
 import numpy as np
 import pandas as pd
+import uuid
+import os
 from streamlit_option_menu import option_menu
 from settings import *
+import face_recognition_models
+from PIL import Image
+from io import BytesIO
 
 st.set_page_config(page_title="Presence Monitoring Webapp", page_icon="👥", layout="wide")
+
+# Load pre-trained face detection model
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 @st.cache_data
 def load_database_data():
     return initialize_data()
 
-@st.cache_resource
 def process_image(image_array):
-    face_locations = face_recognition.face_locations(image_array)
-    encodesCurFrame = face_recognition.face_encodings(image_array, face_locations)
-    return face_locations, encodesCurFrame
+    gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
+    return faces
 
 def main():
     st.markdown(
@@ -48,7 +35,7 @@ def main():
     )
 
     st.sidebar.header("About")
-    st.sidebar.info("This webapp monitors the presence of operators in a smart factory using 'Face Recognition' and Streamlit")
+    st.sidebar.info("This webapp monitors the presence of operators in a smart factory using OpenCV and Streamlit")
 
     if st.sidebar.button('Clear all data'):
         for path in [OPERATORS_DB, OPERATORS_HISTORY]:
@@ -86,32 +73,33 @@ def operator_validation():
             file.write(img_file_buffer.getbuffer())
         st.success('Image Saved Successfully!')
 
-        face_locations, encodesCurFrame = process_image(image_array)
+        faces = process_image(image_array)
 
-        if face_locations:
-            process_faces(image_array, face_locations, encodesCurFrame, operator_id)
+        if len(faces) > 0:
+            process_faces(image_array, faces, operator_id)
         else:
             st.error('No human face detected.')
 
-def process_faces(image_array, face_locations, encodesCurFrame, operator_id):
+def process_faces(image_array, faces, operator_id):
     database_data = load_database_data()
-    face_encodings = database_data[COLS_ENCODE].values
-    dataframe = database_data[COLS_INFO]
 
-    for face_idx, (face_encode, (top, right, bottom, left)) in enumerate(zip(encodesCurFrame, face_locations)):
-        dataframe['distance'] = face_recognition.face_distance(face_encodings, face_encode)
-        dataframe['similarity'] = dataframe['distance'].apply(face_distance_to_conf)
-        dataframe_new = dataframe[dataframe['similarity'] > 0.5].sort_values(by="similarity", ascending=False).head(1)
+    for (x, y, w, h) in faces:
+        face_img = image_array[y:y+h, x:x+w]
+        face_encoding = cv2.resize(face_img, (128, 128)).flatten()
 
-        if not dataframe_new.empty:
-            name_operator = dataframe_new.iloc[0]['Name']
+        # Compare with database
+        similarities = database_data[COLS_ENCODE].apply(lambda row: np.dot(face_encoding, row) / (np.linalg.norm(face_encoding) * np.linalg.norm(row)), axis=1)
+        best_match = similarities.idxmax()
+        
+        if similarities[best_match] > 0.7:  # Adjust threshold as needed
+            name_operator = database_data.loc[best_match, 'Name']
             attendance(operator_id, name_operator)
-            draw_face_box(image_array, left, top, right, bottom, name_operator)
+            draw_face_box(image_array, x, y, x+w, y+h, name_operator)
             st.success(f"{name_operator} has been recognized and logged.")
         else:
-            st.error(f'No Match Found for the given Similarity Threshold for face#{face_idx}')
+            st.error(f'No Match Found for the given Similarity Threshold')
             attendance(operator_id, 'Unknown')
-            draw_face_box(image_array, left, top, right, bottom, "Unknown")
+            draw_face_box(image_array, x, y, x+w, y+h, "Unknown")
 
     st.image(cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB), width=720)
 
@@ -140,10 +128,14 @@ def process_new_face(img_file_buffer, face_name):
     with open(os.path.join(OPERATORS_DB, f'{face_name}.jpg'), 'wb') as file:
         file.write(img_file_buffer.getbuffer())
 
-    face_locations, encodesCurFrame = process_image(image_array)
+    faces = process_image(image_array)
 
-    if encodesCurFrame:
-        df_new = pd.DataFrame(data=encodesCurFrame, columns=COLS_ENCODE)
+    if len(faces) > 0:
+        (x, y, w, h) = faces[0]
+        face_img = image_array[y:y+h, x:x+w]
+        face_encoding = cv2.resize(face_img, (128, 128)).flatten()
+
+        df_new = pd.DataFrame(data=[face_encoding], columns=COLS_ENCODE)
         df_new[COLS_INFO] = face_name
         df_new = df_new[COLS_INFO + COLS_ENCODE].copy()
         add_data_db(df_new)
