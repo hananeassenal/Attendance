@@ -10,9 +10,8 @@ from io import BytesIO
 
 st.set_page_config(page_title="Presence Monitoring Webapp", page_icon="👥", layout="wide")
 
-@st.cache_data
-def load_database_data():
-    return initialize_data()
+# Initialize the database at the start of the application
+initialize_data()
 
 def detect_face(image):
     # Convert to HSV color space
@@ -85,7 +84,7 @@ def operator_validation():
             st.error('No human face detected.')
 
 def process_faces(image_array, faces, operator_id):
-    database_data = load_database_data()
+    database_data = st.session_state.operators_db
 
     for (x, y, w, h) in faces:
         face_img = image_array[y:y+h, x:x+w]
