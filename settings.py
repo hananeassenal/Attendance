@@ -6,6 +6,7 @@ import cv2
 import face_recognition
 import numpy as np
 import streamlit as st
+import shutil
 
 # The Root Directory of the project
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -35,7 +36,7 @@ FILE_DB = 'operators_db.csv'
 FILE_HISTORY = 'operators_history.csv'
 
 # Image formats allowed
-ALLOWED_IMAGE_TYPE = ['.png', 'jpg', '.jpeg']
+allowed_image_type = ['.png', '.jpg', '.jpeg']  # Changed to lowercase for consistency
 
 @st.cache_data
 def initialize_data():
@@ -101,4 +102,14 @@ def view_attendace():
     df_attendance = load_attendance_data()
     df_attendance = df_attendance.sort_values(by='Timing', ascending=False)
     df_attendance.reset_index(drop=True, inplace=True)
-    return df_attendance
+    st.write(df_attendance)
+
+    if df_attendance.shape[0] > 0:
+        selected_img = st.selectbox('Search Image using ID', options=['None'] + list(df_attendance['id']))
+        if selected_img != 'None':
+            avail_files = [file for file in os.listdir(OPERATORS_HISTORY)
+                           if file.endswith(tuple(allowed_image_type)) and file.startswith(str(selected_img))]
+            if avail_files:
+                st.image(os.path.join(OPERATORS_HISTORY, avail_files[0]))
+            else:
+                st.write("No image found for the selected ID.")
