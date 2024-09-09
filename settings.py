@@ -12,7 +12,6 @@ COLS_ENCODE = [f'v{i}' for i in range(128*128*3)]  # 128x128 RGB image flattened
 # Image formats allowed
 allowed_image_type = ['.png', '.jpg', '.jpeg']
 
-@st.cache_data
 def initialize_data():
     if 'operators_db' not in st.session_state:
         st.session_state.operators_db = pd.DataFrame(columns=COLS_INFO + COLS_ENCODE)
@@ -20,6 +19,8 @@ def initialize_data():
 
 def add_data_db(df_operators_details):
     try:
+        if 'operators_db' not in st.session_state:
+            initialize_data()
         st.session_state.operators_db = pd.concat([st.session_state.operators_db, df_operators_details], ignore_index=True)
         st.session_state.operators_db.drop_duplicates(subset=COLS_INFO, keep='first', inplace=True)
         st.session_state.operators_db.reset_index(inplace=True, drop=True)
@@ -38,7 +39,6 @@ def attendance(id, name):
     
     st.session_state.attendance_db = pd.concat([st.session_state.attendance_db, df_attendance_temp], ignore_index=True)
 
-@st.cache_data
 def load_attendance_data():
     if 'attendance_db' not in st.session_state:
         st.session_state.attendance_db = pd.DataFrame(columns=["id", "operator_name", "Timing"])
@@ -59,3 +59,6 @@ def face_distance_to_conf(face_distance, face_match_threshold=0.6):
         range = face_match_threshold
         linear_val = 1.0 - (face_distance / (range * 2.0))
         return linear_val + ((1.0 - linear_val) * np.power((linear_val - 0.5) * 2, 0.2))
+
+# Initialize the database when the script is loaded
+initialize_data()
