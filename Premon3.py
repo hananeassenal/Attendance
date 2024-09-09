@@ -1,34 +1,36 @@
+import streamlit as st
+import subprocess
+import sys
+import importlib
+
+def install_and_import(package):
+    try:
+        importlib.import_module(package)
+    except ImportError:
+        st.write(f"Installing {package}...")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+    finally:
+        globals()[package] = importlib.import_module(package)
+
+# Install and import required packages
+install_and_import('dlib')
+install_and_import('face_recognition')
+
+# Now you can import other required modules
 import uuid
 import os
 import cv2
 import numpy as np
 import pandas as pd
-import face_recognition
 from streamlit_option_menu import option_menu
 from settings import *
-import subprocess
-import sys
 
-def install(package):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+st.set_page_config(page_title="Presence Monitoring Webapp", page_icon="👥", layout="wide")
 
-try:
-    import dlib
-except ImportError:
-    install('dlib')
-
-try:
-    import face_recognition
-except ImportError:
-    install('face_recognition')
-
-
-# Use st.cache_data for data loading functions
 @st.cache_data
 def load_database_data():
     return initialize_data()
 
-# Use st.cache_resource for resource-intensive operations
 @st.cache_resource
 def process_image(image_array):
     face_locations = face_recognition.face_locations(image_array)
@@ -36,8 +38,6 @@ def process_image(image_array):
     return face_locations, encodesCurFrame
 
 def main():
-    st.set_page_config(page_title="Presence Monitoring Webapp", page_icon="👥", layout="wide")
-    
     st.markdown(
         f"""
         <div style="background-color:#bddc6d;padding:12px">
