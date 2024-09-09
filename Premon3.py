@@ -10,17 +10,30 @@ from io import BytesIO
 
 st.set_page_config(page_title="Presence Monitoring Webapp", page_icon="👥", layout="wide")
 
-# Load pre-trained face detection model
-face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
 @st.cache_data
 def load_database_data():
     return initialize_data()
 
-def process_image(image_array):
-    gray = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
-    faces = face_cascade.detectMultiScale(gray, 1.1, 4)
-    return faces
+def detect_face(image):
+    # Convert to HSV color space
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    
+    # Define range of skin color in HSV
+    lower_skin = np.array([0, 20, 70], dtype=np.uint8)
+    upper_skin = np.array([20, 255, 255], dtype=np.uint8)
+    
+    # Create a binary mask
+    mask = cv2.inRange(hsv, lower_skin, upper_skin)
+    
+    # Find contours in the mask
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    # Find the largest contour (assumed to be the face)
+    if contours:
+        largest_contour = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(largest_contour)
+        return [(x, y, w, h)]
+    return []
 
 def main():
     st.markdown(
@@ -64,9 +77,9 @@ def operator_validation():
         bytes_data = img_file_buffer.getvalue()
         image_array = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
         
-        faces = process_image(image_array)
+        faces = detect_face(image_array)
 
-        if len(faces) > 0:
+        if faces:
             process_faces(image_array, faces, operator_id)
         else:
             st.error('No human face detected.')
@@ -116,18 +129,28 @@ def process_new_face(img_file_buffer, face_name):
     file_bytes = np.frombuffer(img_file_buffer.getvalue(), np.uint8)
     image_array = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-    faces = process_image(image_array)
+    faces = detect_face(image_array)
 
-    if len(faces) > 0:
+    if faces:
         (x, y, w, h) = faces[0]
         face_img = image_array[y:y+h, x:x+w]
         face_encoding = cv2.resize(face_img, (128, 128)).flatten()
 
-        df_new = pd.DataFrame(data=[face_encoding], columns=COLS_ENCODE)
-        df_new[COLS_INFO] = face_name
-        df_new = df_new[COLS_INFO + COLS_ENCODE].copy()
-        add_data_db(df_new)
-        st.success(f"Face data for {face_name} added to the database.")
+        # Ensure the face encoding has the correct number of elements
+        if len(face_encoding) != len(COLS_ENCODE):
+            st.error(f"Face encoding length ({len(face_encoding)}) does not match expected length ({len(COLS_ENCODE)})")
+            return
+
+        # Create a dictionary with the correct column names and values
+        face_data = {col: val for col, val in zip(COLS_ENCODE, face_encoding)}
+        face_data[COLS_INFO[0]] = face_name  # Add the name column
+
+        df_new = pd.DataFrame([face_data])
+
+        if add_data_db(df_new):
+            st.success(f"Face data for {face_name} added to the database.")
+        else:
+            st.error("Failed to add face data to the database.")
     else:
         st.error("No face detected in the image. Please try again with a clear face image.")
 
