@@ -41,6 +41,7 @@ def main():
                     os.remove(os.path.join(path, file))
             else:
                 os.makedirs(path)
+        st.sidebar.success("All data cleared!")
 
     selected_menu = option_menu(None, 
                                 ['Operator Validation', 'View Operator History', 'Add to Database'], 
@@ -52,7 +53,7 @@ def main():
     if selected_menu == 'Operator Validation':
         operator_validation()
     elif selected_menu == 'View Operator History':
-        view_attendance()
+        view_attendace()
     elif selected_menu == 'Add to Database':
         add_to_database()
 
@@ -90,9 +91,11 @@ def process_faces(image_array, face_locations, encodesCurFrame, operator_id):
             name_operator = dataframe_new.iloc[0]['Name']
             attendance(operator_id, name_operator)
             draw_face_box(image_array, left, top, right, bottom, name_operator)
+            st.success(f"{name_operator} has been recognized and logged.")
         else:
             st.error(f'No Match Found for the given Similarity Threshold for face#{face_idx}')
             attendance(operator_id, 'Unknown')
+            draw_face_box(image_array, left, top, right, bottom, "Unknown")
 
     st.image(cv2.cvtColor(image_array, cv2.COLOR_BGR2RGB), width=720)
 
