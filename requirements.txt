@@ -1,8 +1,6 @@
 numpy
 pandas
 plotly
-cmake
-face_recognition
 streamlit
 streamlit-option-menu
 opencv-python-headless
