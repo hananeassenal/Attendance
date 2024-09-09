@@ -13,7 +13,5 @@ setup(
         'streamlit-option-menu',
         'opencv-python-headless',
         'Pillow',
-        'dlib',
-        'face_recognition',
     ],
 )
