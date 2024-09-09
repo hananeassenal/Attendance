@@ -6,6 +6,22 @@ import pandas as pd
 import face_recognition
 from streamlit_option_menu import option_menu
 from settings import *
+import subprocess
+import sys
+
+def install(package):
+    subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+try:
+    import dlib
+except ImportError:
+    install('dlib')
+
+try:
+    import face_recognition
+except ImportError:
+    install('face_recognition')
+
 
 # Use st.cache_data for data loading functions
 @st.cache_data
