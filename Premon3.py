@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 import pandas as pd
 import uuid
-import os
 from streamlit_option_menu import option_menu
 from settings import *
 from PIL import Image
@@ -37,12 +36,10 @@ def main():
     st.sidebar.info("This webapp monitors the presence of operators in a smart factory using OpenCV and Streamlit")
 
     if st.sidebar.button('Clear all data'):
-        for path in [OPERATORS_DB, OPERATORS_HISTORY]:
-            if os.path.exists(path):
-                for file in os.listdir(path):
-                    os.remove(os.path.join(path, file))
-            else:
-                os.makedirs(path)
+        if 'operators_db' in st.session_state:
+            st.session_state.operators_db = pd.DataFrame(columns=COLS_INFO + COLS_ENCODE)
+        if 'attendance_db' in st.session_state:
+            st.session_state.attendance_db = pd.DataFrame(columns=["id", "operator_name", "Timing"])
         st.sidebar.success("All data cleared!")
 
     selected_menu = option_menu(None, 
@@ -67,11 +64,6 @@ def operator_validation():
         bytes_data = img_file_buffer.getvalue()
         image_array = cv2.imdecode(np.frombuffer(bytes_data, np.uint8), cv2.IMREAD_COLOR)
         
-        # Save operator history
-        with open(os.path.join(OPERATORS_HISTORY, f'{operator_id}.jpg'), 'wb') as file:
-            file.write(img_file_buffer.getbuffer())
-        st.success('Image Saved Successfully!')
-
         faces = process_image(image_array)
 
         if len(faces) > 0:
@@ -123,9 +115,6 @@ def add_to_database():
 def process_new_face(img_file_buffer, face_name):
     file_bytes = np.frombuffer(img_file_buffer.getvalue(), np.uint8)
     image_array = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-    
-    with open(os.path.join(OPERATORS_DB, f'{face_name}.jpg'), 'wb') as file:
-        file.write(img_file_buffer.getbuffer())
 
     faces = process_image(image_array)
 
