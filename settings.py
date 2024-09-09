@@ -3,10 +3,8 @@ import pathlib
 import datetime
 import pandas as pd
 import cv2
-import face_recognition
 import numpy as np
 import streamlit as st
-import shutil
 
 # The Root Directory of the project
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,7 +26,7 @@ for dir_path in [DOWNLOADS_PATH, LOG_DIR, OUT_DIR, OPERATORS_DB, OPERATORS_HISTO
 COLOR_DARK = (0, 0, 153)
 COLOR_WHITE = (255, 255, 255)
 COLS_INFO = ['Name']
-COLS_ENCODE = [f'v{i}' for i in range(128)]
+COLS_ENCODE = [f'v{i}' for i in range(128)]  # 128-dimensional face encoding
 
 # Database
 DATA_PATH = OPERATORS_DB
@@ -36,7 +34,7 @@ FILE_DB = 'operators_db.csv'
 FILE_HISTORY = 'operators_history.csv'
 
 # Image formats allowed
-allowed_image_type = ['.png', '.jpg', '.jpeg']  # Changed to lowercase for consistency
+allowed_image_type = ['.png', '.jpg', '.jpeg']
 
 @st.cache_data
 def initialize_data():
@@ -63,10 +61,6 @@ def add_data_db(df_operators_details):
 
 def BGR_to_RGB(image_in_array):
     return cv2.cvtColor(image_in_array, cv2.COLOR_BGR2RGB)
-
-@st.cache_data
-def findEncodings(images):
-    return [face_recognition.face_encodings(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))[0] for img in images]
 
 def face_distance_to_conf(face_distance, face_match_threshold=0.6):
     if face_distance > face_match_threshold:
