@@ -7,7 +7,7 @@ import streamlit as st
 COLOR_DARK = (0, 0, 153)
 COLOR_WHITE = (255, 255, 255)
 COLS_INFO = ['Name']
-COLS_ENCODE = [f'v{i}' for i in range(128)]  # 128-dimensional face encoding
+COLS_ENCODE = [f'v{i}' for i in range(128*128*3)]  # 128x128 RGB image flattened
 
 # Image formats allowed
 allowed_image_type = ['.png', '.jpg', '.jpeg']
