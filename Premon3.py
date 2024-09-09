@@ -6,7 +6,6 @@ import uuid
 import os
 from streamlit_option_menu import option_menu
 from settings import *
-import face_recognition_models
 from PIL import Image
 from io import BytesIO
 
